@@ -5,7 +5,7 @@ const {registerUser, loginUser, updateUser, deleteUser} = require("../controller
 
 router.post("/createUser", registerUser)
 router.post("/login", loginUser)
-router.put("/updateUser", updateUser)
-//router.delete("/deleteUser", deleteUser)
+router.put("/:id", updateUser)
+router.delete("/:id", deleteUser)
 
 module.exports = router
