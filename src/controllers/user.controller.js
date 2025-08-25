@@ -44,8 +44,18 @@ const updateUser = async (req, res) => {
     }
 }
 
+const deleteUser = async (req, res) => {
+    try {
+        
+    } catch (error) {
+     res.status(500).json(error)   
+    }
+}
+
 
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    updateUser,
+    deleteUser
 }
