@@ -1,30 +1,44 @@
 const userModel = require('../models/user.model');
-const UserModel = require('../models/user.model');
+const { encryption, comparison } = require("../helper/encryptDecrypt")
 
 const registerUser = async (req, res) => {
     try {
         console.log("req.body", req.body)
-        const response = await UserModel.create(req.body)
+
+        const response = await userModel.create({
+            ...req.body,
+            password : encryption(req.body.password)
+        })
         
         res.status(200).json(response)
 
     } catch (error) {
+        console.log(error)
         res.status(500).json("internal server error!")
+    }
+}
+
+const batchRegisterUser = async (req, res) => {
+    try {
+        
+    } catch (error) {
+        console.log("An Error Occurred!", error)
+        res.status(500).json({message: "Internal Server Error!"})
     }
 }
 
 const loginUser = async (req, res) => {
     try {
-        const {name, email, phoneNumber, password} = req.body
-        const foundUser = await UserModel.findOne({name: name})
+        const {name, email, phoneNumber, password} = req.body //password is plain password
+        const foundUser = await userModel.findOne({name: name})
         if (!foundUser){
             return res.status(404).json({message: "User not found!"})
         }
         
-        if(foundUser.email !== email || foundUser.phoneNumber !== phoneNumber || foundUser.password !== password)
+        if(foundUser.email !== email || foundUser.phoneNumber !== phoneNumber || !comparison(password, foundUser.password))
             return res.status(403).json({message:"User not authorized!"})
 
-        if(foundUser.isLoggedIn) return res.status(400).json("This user is logged elsewhere!")
+        //if(foundUser.isLoggedIn) return res.status(400).json("This user is logged elsewhere!")
 
 
         const updatedUser = await userModel.findOneAndUpdate({name: name}, {isLoggedIn: true}, {new: true})    

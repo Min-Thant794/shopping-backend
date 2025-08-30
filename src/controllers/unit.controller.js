@@ -1,0 +1,57 @@
+const unitModel = require("../models/unit.model")
+
+const getAllUnit = async (req, res) => {
+    try {
+        const allUnits = await unitModel.find({})
+        const totalUnits = allUnits.length;
+        res.status(200).json({message: `Total ${totalUnits} ${totalUnits > 1 ? 'units' : 'unit'} found!`, allUnits })
+    } catch (error) {
+        console.log("Error Fetching unit!", error)
+        res.status(500).json({message: "Failed to fetch unit!"})
+    }
+}
+
+const createUnit = async (req, res) => {
+    try {
+        const createUnit = await unitModel.create({name: req.body.name.toUpperCase()})
+        if (!createUnit) res.status(400).json({message: "Failed to create unit!"})
+
+            res.status(200).json({createUnit, message: "Successfully unit created!"})
+    } catch (error) {
+        console.log("An error occurred!", error)
+        res.status(500).json({message: "Internal Server Error!"})
+    }
+}
+
+const updateUnit = async(req, res) => {
+    try {
+        const updatedUnit = await unitModel.findByIdAndUpdate(req.params.id, {name: req.body.name.toUpperCase()}, {new:true})
+        if(!updatedUnit) res.status(400).json("Failed to update unit!")
+        
+        res.status(200).json({message: "Successfully updated!", updatedUnit})
+        console.log("Updated Unit: ", updatedUnit)
+    } catch (error) {
+        console.log("An error occurred!", error)
+        res.status(500).json({message: "Internal Server Error!"})
+    }
+}
+
+const deleteUnit = async(req, res) => {
+    try {
+        const deletedUnit = await unitModel.findByIdAndDelete(req.params.id)
+        if(!deletedUnit) res.status(400).json("Failed to delete unit!")
+        
+        res.status(200).json({message: "Successfully deleted!", deletedUnit})
+        console.log("Deleted Unit: ", deletedUnit)
+    } catch (error) {
+        console.log("An error occurred!", error)
+        res.status(500).json({message: "Internal Server Error!"})
+    }
+}
+
+module.exports = {
+    getAllUnit,
+    createUnit,
+    updateUnit,
+    deleteUnit
+}

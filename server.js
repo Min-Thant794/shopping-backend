@@ -1,10 +1,15 @@
 const express = require('express');
 const app = express()
-require('dotenv').config();
-const port = process.env.PORT || 8080
 const mongoose = require("mongoose")
-const mongodb_url = process.env.MONGODB_URL
+require('dotenv').config();
+const config = require("./src/config/config")
+const port = config.PORT
+const mongodb_url = config.MONGODB_URL
 const userRoutes = require("./src/routes/user.route")
+const unitRoutes = require("./src/routes/unit.route")
+const categoryRoutes = require("./src/routes/category.route")
+const productRoutes = require("./src/routes/product.route")
+const sizeMapRoutes = require("./src/routes/sizeMap.route")
 const json = require('json')
 const cors = require('cors');
 //app.use(cors("*"));
@@ -18,6 +23,10 @@ app.get('/', (req, res) => {
     res.send("Api start working!")
 })
 
-app.use("/api/v1", userRoutes)
+app.use("/api/v1/user", userRoutes)
+app.use("/api/v1/unit", unitRoutes)
+app.use("/api/v1/category", categoryRoutes)
+app.use("/api/v1/product", productRoutes)
+app.use("/api/v1/sizeMap", sizeMapRoutes)
 
 mongoose.connect(mongodb_url).then(() => console.log("Mongodb is successfully connnected!")).catch((error) => console.log("Fail to connect with database", error))
