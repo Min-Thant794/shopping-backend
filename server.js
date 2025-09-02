@@ -12,8 +12,8 @@ const productRoutes = require("./src/routes/product.route")
 const sizeMapRoutes = require("./src/routes/sizeMap.route")
 const json = require('json')
 const cors = require('cors');
-//app.use(cors("*"));
 
+app.use(cors('http://localhost:4000'));
 app.use(express.json())
 app.listen(port, ()=>{
     console.log(`Server is listening at http://localhost:${port}`)

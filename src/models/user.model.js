@@ -2,10 +2,10 @@ const mongoose = require('mongoose');
 
 const userModelSchema =  new mongoose.Schema({
     name:{type: String, required: true, unique: true},
-    email:{type: String, required: false, default: "", unique: true},
+    email:{type: String, required: true, default: "", unique: true},
     phoneNumber:{
         type: String, 
-        required: true, 
+        required: false, 
         unique: true,
         trim: true,
         validate: (

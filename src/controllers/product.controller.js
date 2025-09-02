@@ -26,9 +26,20 @@ const getProductByCategory = async (req, res) => {
 const getProductByDiscount = async (req, res) => {
     try {
         const { discount } = req.params;
-        const foundProductWithDiscount = await productModel.find({ discount })
+        const foundProductWithDiscount = await productModel.find({ discount : parseInt( discount ) })
         const totalFoundProductWithDiscount = foundProductWithDiscount.length;
         res.status(200).json({message: `${totalFoundProductWithDiscount} ${totalFoundProductWithDiscount > 1 ? 'products': 'product'} found with discount`, foundProductWithDiscount})
+    } catch (error) {
+        console.log("An Error Occurred!", error)
+        res.status(500).json({message: "Internal Server Error!"})
+    }
+}
+
+const getAllProductByDiscount = async (req, res) => {
+    try {
+        const foundAllProductWithDiscount = await productModel.find({ discount: { $gt: 0 }})
+        const totalFoundDiscountProduct = foundAllProductWithDiscount.length;
+        res.status(200).json({messgae: `${totalFoundDiscountProduct} ${totalFoundDiscountProduct > 1 ? 'products' : 'product'} found with discount`, foundAllProductWithDiscount})
     } catch (error) {
         console.log("An Error Occurred!", error)
         res.status(500).json({message: "Internal Server Error!"})
@@ -114,6 +125,7 @@ module.exports = {
     getAllProduct,
     getProductByCategory,
     getProductByDiscount,
+    getAllProductByDiscount,
     createProduct,
     batchCreateProduct,
     updateProduct,

@@ -15,7 +15,7 @@ const createCategory = async (req, res) => {
     try {
         const createCategory = await categoryModel.create({name: req.body.name.toUpperCase()})
         if(!createCategory) res.status(400).json({message: "Failed to create category"})
-            res.status(200).json({message: "Category is successfully created!", createCategory})
+            res.status(200).json({message: `Category is successfully created by ${req.name} (${req.role})`, createCategory})
     } catch (error) {
         console.log("An error occurred!", error)
         res.status(500).json({message: "Internal Server Error!"})
