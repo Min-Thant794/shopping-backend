@@ -6,6 +6,10 @@ const registerUser = async (req, res) => {
     try {
         console.log("req.body", req.body)
 
+        const foundUser = await userModel.find({name: req.body.name})
+        if(foundUser && foundUser.length > 0) {
+            return res.status(400).json({message: "User Already Exist!"})
+        }
         const response = await userModel.create({
             ...req.body,
             password : encryption(req.body.password)
@@ -45,10 +49,10 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const { name, email } = req.body;
+        const { name } = req.body;
         const passwordFromReq = req.body.password;
 
-        const foundUser = await userModel.findOne({ name: name, email: email})
+        const foundUser = await userModel.findOne({ name: name})
         if(!foundUser) {
             return res.status(400).json({message: "User not exist!"})
         }
