@@ -2,11 +2,15 @@ const mongoose = require('mongoose');
 
 const userModelSchema =  new mongoose.Schema({
     name:{type: String, required: true, unique: true},
-    email:{type: String, required: false, default: "", unique: true},
+    email:{type: String, required: false, unique: true, sparse: true,
+        set: v => v === "" ? undefined : v
+    },
     phoneNumber:{
         type: String, 
         required: false, 
         unique: true,
+        sparse: true,
+        set: v => v === "" ? undefined : v,
         trim: true,
         validate: (
             function(v){
