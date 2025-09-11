@@ -49,32 +49,33 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const { name } = req.body;
-        const passwordFromReq = req.body.password;
+        const { name, password } = req.body;
 
-        const foundUser = await userModel.findOne({ name: name})
-        if(!foundUser) {
-            return res.status(400).json({message: "User not exist!"})
+        if (!name || !password) {
+            return res.status(400).json({ message: "Name and password are required!" });
         }
 
-        if(!comparison(passwordFromReq, foundUser.password)){
-            console.log("Not Authenticated!")
-            return res.status(403).json({message: "User not authenticated!"})
+        const foundUser = await userModel.findOne({ name });
+        if (!foundUser) {
+            return res.status(400).json({ message: "User does not exist!" });
         }
 
-        //const updatedUser = await userModel.findOneAndUpdate({ name: name }, { isLoggedIn: true }, { new: true })
+        const isPasswordCorrect = await comparison(password, foundUser.password);
+        if (!isPasswordCorrect) {
+            return res.status(403).json({ message: "User not authenticated!" });
+        }
 
         return res.status(200).json({
             data: foundUser,
-            token: createToken({ name: foundUser.name, email: foundUser.email, password: foundUser.password, role: foundUser.role}),
+            token: createToken({ name: foundUser.name, email: foundUser.email, password: foundUser.password, role: foundUser.role }),
             message: "Login Success!",
             success: true
-        })
+        });
     } catch (error) {
-        console.log("An Error Occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("An Error Occurred!", error);
+        res.status(500).json({ message: "Internal Server Error!" });
     }
-}
+};
 
 const updateUser = async (req, res) => {
     try {

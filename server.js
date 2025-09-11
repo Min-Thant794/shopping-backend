@@ -14,7 +14,7 @@ const json = require('json')
 const cors = require('cors');
 
 app.use(cors('http://localhost:4000',
-    'http://localhost:3000'
+    'http://localhost:3000',
 ));
 app.use(express.json())
 app.listen(port, ()=>{
