@@ -49,7 +49,8 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const {name, passwordFromReq}  = req.body;
+        const {name}  = req.body.name;
+        const passwordFromReq = req.body.password;
 
         const foundUser = await userModel.findOne({ name: name})
         if(!foundUser) {
