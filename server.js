@@ -15,6 +15,7 @@ const cors = require('cors');
 
 app.use(cors('http://localhost:4000',
     'http://localhost:3000',
+    'https://shopping-pwa-admin-ui.vercel.app/'
 ));
 app.use(express.json())
 app.listen(port, ()=>{
