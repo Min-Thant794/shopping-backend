@@ -49,7 +49,7 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const {name}  = req.body.name;
+        const {name}  = req.body;
         const passwordFromReq = req.body.password;
 
         const foundUser = await userModel.findOne({ name: name})
