@@ -82,9 +82,21 @@ const loginUser = async (req, res) => {
 const updateUser = async (req, res) => {
     try {
         console.log("File", req.file);
-        const publicUrl = await uploadImage(req.file);
+        let publicUrl
+        if(req.file){
+            publicUrl = await uploadImage(req.file);
+        }
         const id = req.params.id;
-        const updatedUser = await userModel.findByIdAndUpdate(id, {...req.body, imageUrl: publicUrl}, {new: true})
+        const updatedUser = await userModel.findByIdAndUpdate(id, 
+            publicUrl? 
+            {
+                ...req.body, password: encryption(req.body.password), imageUrl: publicUrl
+            }
+            :
+            {
+                ...req.body, password: encryption(req.body.password)
+            }
+            , {new: true})
         if (!updatedUser) res.status(400).json("Failed to update user")
         res.status(200).json(updatedUser, {message: "Successfully updated!"})
         console.log("updatedUser", updatedUser)
