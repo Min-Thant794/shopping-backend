@@ -24,6 +24,10 @@ const userModelSchema =  new mongoose.Schema({
     allowedPath:{
         type: [String],
         require: true
+    },
+    imageUrl:{
+        type: String,
+        required: false
     }
 },{
     timestamps: true

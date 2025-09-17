@@ -84,7 +84,7 @@ const updateUser = async (req, res) => {
         console.log("File", req.file);
         const publicUrl = await uploadImage(req.file);
         const id = req.params.id;
-        const updatedUser = await userModel.findByIdAndUpdate(id, req.body, {new: true})
+        const updatedUser = await userModel.findByIdAndUpdate(id, {...req.body, imageUrl: publicUrl}, {new: true})
         if (!updatedUser) res.status(400).json("Failed to update user")
         res.status(200).json(updatedUser, {message: "Successfully updated!"})
         console.log("updatedUser", updatedUser)
