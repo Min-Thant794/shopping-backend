@@ -12,6 +12,7 @@ const productRoutes = require("./src/routes/product.route")
 const sizeMapRoutes = require("./src/routes/sizeMap.route")
 const json = require('json')
 const cors = require('cors');
+const {connectRedis, setCache, getCache} = require("./src/config/redisClient")
 
 app.use(cors('http://localhost:4000',
     'http://localhost:3000',
@@ -32,4 +33,8 @@ app.use("/api/v1/category", categoryRoutes)
 app.use("/api/v1/product", productRoutes)
 app.use("/api/v1/sizeMap", sizeMapRoutes)
 
-mongoose.connect(mongodb_url).then(() => console.log("Mongodb is successfully connnected!")).catch((error) => console.log("Fail to connect with database", error))
+mongoose.connect(mongodb_url).then(() =>{
+    console.log("Mongodb is successfully connnected!")})
+    connectRedis().then(() => {
+        console.log("Redis successfully connected!")})
+    .catch((error) => console.log("Fail to connect with database", error))

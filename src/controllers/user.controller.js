@@ -81,29 +81,27 @@ const loginUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
     try {
-        console.log("File", req.file);
-        let publicUrl
+        const { id } = req.params;
+        let finalData = {...req.body}
         if(req.file){
-            publicUrl = await uploadImage(req.file);
+            const imageUrl = await uploadImage(req.file)
+            finalData = {...finalData, imageUrl}
+        }else{
+            delete finalData.image
         }
-        const id = req.params.id;
-        const updatedUser = await userModel.findByIdAndUpdate(id, 
-            publicUrl? 
-            {
-                ...req.body, password: encryption(req.body.password), imageUrl: publicUrl
-            }
-            :
-            {
-                ...req.body, password: encryption(req.body.password)
-            }
-            , {new: true})
-        if (!updatedUser) res.status(400).json("Failed to update user")
-        res.status(200).json(updatedUser, {message: "Successfully updated!"})
-        console.log("updatedUser", updatedUser)
+
+        if(req.body.password && req.body.password !== "undefined"){
+            finalData.password = encryption(req.body.password)
+        }else{
+            delete finalData.password
+        }
+
+        const updatedUser = await userModel.findByIdAndUpdate(id, finalData, {new: true})
+        if(!updatedUser) res.status(400).json({message: "Failed to update user!", success: false})
+            return res.status(200).json({message: "Successfully Updated!", success: true, data: updatedUser})
 
     } catch (error) {
-        console.log(error)
-        res.status(500).json("internal server error!")
+        res.status(500).json({message: "Internal Server Error!"})
     }
 }
 
@@ -112,7 +110,7 @@ const deleteUser = async (req, res) => {
         const id = req.params.id;
         const deletedUser = await userModel.findByIdAndDelete(id);
         if(!deletedUser) res.status(400).json("Failed to delete user!")
-        res.status(200).json("Successfully deleted!")
+        return res.status(200).json("Successfully deleted!")
 
     } catch (error) {
      res.status(500).json("internal server error!")   
