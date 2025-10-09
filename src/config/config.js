@@ -13,7 +13,9 @@ const config = {
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: process.env.REDIS_PORT,
     REDIS_UNIT_KEY: process.env.REDIS_UNIT_KEY,
-    REDIS_TTL: process.env.REDIS_TTL
+    REDIS_CATEGORY_KEY : process.env.REDIS_CATEGORY_KEY,
+    REDIS_TTL: process.env.REDIS_TTL,
+    JWT_TTL: process.env.JWT_TTL
 }
 
 module.exports = config

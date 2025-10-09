@@ -27,9 +27,9 @@ const getAllUnit = async (req, res) => {
 const createUnit = async (req, res) => {
     try {
         const createUnit = await unitModel.create({name: req.body.name.toUpperCase()})
-        if (!createUnit) res.status(400).json({message: "Failed to create unit!"})
+        if (!createUnit) return res.status(405).json({message: "Failed to create unit!", success: false})
             await clearCache(config.REDIS_UNIT_KEY)
-            res.status(200).json({createUnit, message: "Successfully unit created!"})
+            res.status(200).json({data: createUnit, message: "Successfully unit created!", success: true})
     } catch (error) {
         console.log("An error occurred!", error)
         res.status(500).json({message: "Internal Server Error!"})
@@ -42,7 +42,7 @@ const updateUnit = async(req, res) => {
         if(!updatedUnit) res.status(400).json("Failed to update unit!")
         
         await clearCache(config.REDIS_UNIT_KEY)
-        res.status(200).json({message: "Successfully updated!", updatedUnit})
+        res.status(200).json({message: "Successfully updated!", updatedUnit, success: true})
         console.log("Updated Unit: ", updatedUnit)
     } catch (error) {
         console.log("An error occurred!", error)
@@ -56,7 +56,7 @@ const deleteUnit = async(req, res) => {
         if(!deletedUnit) res.status(400).json("Failed to delete unit!")
         
         await clearCache(config.REDIS_UNIT_KEY)
-        res.status(200).json({message: "Successfully deleted!", deletedUnit})
+        res.status(200).json({message: "Successfully deleted!", deletedUnit, success: true})
         console.log("Deleted Unit: ", deletedUnit)
     } catch (error) {
         console.log("An error occurred!", error)

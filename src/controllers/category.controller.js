@@ -1,8 +1,20 @@
 const categoryModel = require("../models/category.model")
+const { setCache, getCache, clearCache } = require("../config/redisClient")
+const config = require("../config/config")
 
 const getallCategory = async (req, res) => {
     try {
+        const cachedData = await getCache(config.REDIS_CATEGORY_KEY)
+        if(cachedData){
+            const jsonData = JSON.parse(cachedData)
+            res.status(200).json({
+                success: true,
+                message: "Data Fetched From Redis Cache",
+                data: jsonData
+            })
+        }
         const allCategory = await categoryModel.find({})
+        await setCache(config.REDIS_CATEGORY_KEY, allCategory)
         const totalCategory = allCategory.length
         res.status(200).json({message: `Total ${totalCategory} ${totalCategory > 1 ? 'categories' : 'category'} found!`, allCategory})
     } catch (error) {

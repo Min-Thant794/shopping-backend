@@ -7,7 +7,7 @@ const verifyToken = async (req, res, next) => {
     if(!token) res.status(401).json({message: "No Token Provided!"})
 
     jwt.verify(token, config.SECRET_KEY, async (err, decoded) => {
-        if(err) return res.status(403).json({message: "User not authenticated!"})
+        if(err) return res.status(403).json({message: "User not authenticated!", error: err})
         console.log("Decoded", decoded)
         req.name = decoded.name,
         req.role = decoded.role
