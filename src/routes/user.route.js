@@ -1,8 +1,10 @@
 const express = require('express')
 const router = express.Router()
-const {registerUser, loginUser, updateUser, deleteUser, batchRegisterUser} = require("../controllers/user.controller")
-const { upload } = require("../config/supabase")
+const {registerUser, loginUser, updateUser, deleteUser, batchRegisterUser, getAllAdmin} = require("../controllers/user.controller")
+const upload = require("../config/multer")
+const { verifyToken } = require('../helper/authJWT')
 
+router.get("/admin", verifyToken, getAllAdmin)
 router.post("/", registerUser)
 // router.post("/batch", batchRegisterUser)
 router.post("/login", loginUser)

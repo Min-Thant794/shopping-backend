@@ -2,6 +2,8 @@ const userModel = require('../models/user.model');
 const { encryption, comparison } = require("../helper/encryptDecrypt")
 const { createToken } = require("../helper/common.helper");
 const { uploadImage } = require('../config/supabase');
+const { getCache } = require('../config/redisClient');
+config = require("../config/config")
 
 const registerUser = async (req, res) => {
     try {
@@ -48,6 +50,16 @@ const registerUser = async (req, res) => {
 //     }
 // }
 
+const getAllAdmin = async (req, res) => {
+    try {
+        const allAdmin = await userModel.find().populate("role")
+        return res.status(200).json({data: allAdmin, message: "Admin user successfully fetched!", success: true})
+    } catch (error) {
+        console.log(error) 
+        res.status(500).json({message: "Initernal server error!", error})       
+    }
+}
+
 const loginUser = async (req, res) => {
     try {
         const { name, password } = req.body;
@@ -57,7 +69,7 @@ const loginUser = async (req, res) => {
             return res.status(400).json({ message: "Name and password are required!" });
         }
 
-        const foundUser = await userModel.findOne({ name });
+        const foundUser = await userModel.findOne({ name }).populate("role");
         if (!foundUser) {
             return res.status(400).json({ message: "User does not exist!" });
         }
@@ -90,15 +102,17 @@ const updateUser = async (req, res) => {
             delete finalData.image
         }
 
-        if(req.body.password && req.body.password !== "undefined"){
+        if(req.body.password && req.body.password.trim() !== ""){
             finalData.password = encryption(req.body.password)
         }else{
             delete finalData.password
         }
 
         const updatedUser = await userModel.findByIdAndUpdate(id, finalData, {new: true})
-        if(!updatedUser) res.status(400).json({message: "Failed to update user!", success: false})
-            return res.status(200).json({message: "Successfully Updated!", success: true, data: updatedUser})
+        if(!updatedUser){
+            return res.status(400).json({message: "Failed to update user!", success: false})
+        }
+        return res.status(200).json({message: "Successfully Updated!", success: true, data: updatedUser})
 
     } catch (error) {
         res.status(500).json({message: "Internal Server Error!"})
@@ -117,8 +131,8 @@ const deleteUser = async (req, res) => {
     }
 }
 
-
 module.exports = {
+    getAllAdmin,
     registerUser,
     //batchRegisterUser,
     loginUser,

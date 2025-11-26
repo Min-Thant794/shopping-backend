@@ -6,18 +6,23 @@ const config = require("./src/config/config")
 const port = config.PORT
 const mongodb_url = config.MONGODB_URL
 const userRoutes = require("./src/routes/user.route")
+const roleRoutes = require("./src/routes/role.route")
 const unitRoutes = require("./src/routes/unit.route")
 const categoryRoutes = require("./src/routes/category.route")
 const productRoutes = require("./src/routes/product.route")
 const sizeMapRoutes = require("./src/routes/sizeMap.route")
 const json = require('json')
 const cors = require('cors');
-const {connectRedis, setCache, getCache} = require("./src/config/redisClient")
+const {connectRedis} = require("./src/config/redisClient")
 
-app.use(cors('http://localhost:4000',
-    'http://localhost:3000',
-    'https://shopping-pwa-admin-ui.vercel.app/'
-));
+app.use(cors({
+    origin: [
+        "http://localhost:3000",
+        "http://localhost:4000",
+        "https://shopping-pwa-admin-ui.vercel.app"
+    ],
+    credentials: true
+}));
 app.use(express.json())
 app.listen(port, ()=>{
     console.log(`Server is listening at http://localhost:${port}`)
@@ -32,6 +37,7 @@ app.use("/api/v1/unit", unitRoutes)
 app.use("/api/v1/category", categoryRoutes)
 app.use("/api/v1/product", productRoutes)
 app.use("/api/v1/sizeMap", sizeMapRoutes)
+app.use("/api/v1/role", roleRoutes)
 
 mongoose.connect(mongodb_url).then(() =>{
     console.log("Mongodb is successfully connnected!")})

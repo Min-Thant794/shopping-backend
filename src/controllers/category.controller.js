@@ -26,8 +26,9 @@ const getallCategory = async (req, res) => {
 const createCategory = async (req, res) => {
     try {
         const createCategory = await categoryModel.create({name: req.body.name.toUpperCase()})
-        if(!createCategory) res.status(400).json({message: "Failed to create category"})
-            res.status(200).json({message: `Category is successfully created by ${req.name} (${req.role})`, createCategory})
+        if(!createCategory) res.status(405).json({message: "Failed to create category", success: false})
+            await clearCache(config.REDIS_CATEGORY_KEY)
+            res.status(201).json({data: createCategory, message: "Successfully category created!", success: true})
     } catch (error) {
         console.log("An error occurred!", error)
         res.status(500).json({message: "Internal Server Error!"})
@@ -38,7 +39,9 @@ const updateCategory = async (req, res) => {
     try {
         const updatedCategory = await categoryModel.findByIdAndUpdate(req.params.id, {name: req.body.name.toUpperCase()}, {new: true})
         if(!updatedCategory) res.status(400).json({message: "Failed to update category!"})
-            res.status(200).json({message: "Category is successfully updated!", updatedCategory})
+            
+            await clearCache(config.REDIS_CATEGORY_KEY)
+            res.status(200).json({message: "Category is successfully updated!", updatedCategory, success: true})
         console.log("Updated Category: ", updatedCategory)
     } catch (error) {
         console.log("An error occurred!", error)

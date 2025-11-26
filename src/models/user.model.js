@@ -19,7 +19,10 @@ const userModelSchema =  new mongoose.Schema({
         )
     },
     password:{type: String, required: true},
-    role:{type: String, enum: ["Super Admin", "Admin", "Customer"], required: true, default: "Customer"},
+    role: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "roles"
+    },
     isLoggedIn:{type: Boolean, required: true, default: true},
     allowedPath:{
         type: [String],
