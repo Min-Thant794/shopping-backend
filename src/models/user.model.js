@@ -31,6 +31,10 @@ const userModelSchema =  new mongoose.Schema({
     imageUrl:{
         type: String,
         required: false
+    },
+    active:{
+        type: Boolean,
+        default: true
     }
 },{
     timestamps: true

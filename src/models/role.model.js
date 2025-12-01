@@ -4,6 +4,8 @@ const roleModelSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
+        unique: true,
+        enum: ["Super Admin", "Admin", "Salesman", "Customer"]
     },
     description: {
         type: String,
@@ -12,6 +14,10 @@ const roleModelSchema = new mongoose.Schema({
     allowedPaths: {
         type: [String],
         required: true,
+    },
+    active: {
+        type: Boolean,
+        default: true
     }
 }, {
     timestamps: true

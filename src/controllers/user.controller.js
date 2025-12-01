@@ -11,24 +11,22 @@ const registerUser = async (req, res) => {
 
         const foundUser = await userModel.find({name: req.body.name})
         if(foundUser && foundUser.length > 0) {
-            return res.status(400).json({message: "User Already Exist!"})
+            return res.status(400).json({message: "User Already Exist!", success: false})
         }
         const response = await userModel.create({
             ...req.body,
             password : encryption(req.body.password)
         })
 
-        if(!response) res.status(400).json({message: "Failed to create user"})
-            res.status(200).json({
+        const {name, password, role} = response;
+        const token = createToken({name, password, role});
+
+        res.status(200).json({
             data: response,
+            token,
             message: `User ${response.name} has successfully created!`,
-            success: true,
-            token: createToken({
-                name: response.name,
-                email: response.email,
-                phoneNumber: response.phoneNumber,
-                password: response.password
-            })})
+            success: true
+        })
 
     } catch (error) {
         console.log(error)
@@ -119,12 +117,24 @@ const updateUser = async (req, res) => {
     }
 }
 
+const updateUserRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updatedUserRole = await userModel.findByIdAndUpdate(id, { role: req.body.role}, {new: true})
+        if(!updatedUserRole) return res.status(400).json({message: "Failed to update user role!", success: false});
+        res.status(200).json({success: true, message: "Successfully updated user role!", data: updatedUserRole})
+    } catch (error) {
+        console.log("Error occurred at updateUserRole()", error);
+        res.status(500).json({message: "Internal Server Error!"})
+    }
+}
+
 const deleteUser = async (req, res) => {
     try {
         const id = req.params.id;
         const deletedUser = await userModel.findByIdAndDelete(id);
         if(!deletedUser) res.status(400).json("Failed to delete user!")
-        return res.status(200).json("Successfully deleted!")
+        return res.status(200).json({message: "Successfully deleted!", success: true})
 
     } catch (error) {
      res.status(500).json("internal server error!")   
@@ -136,6 +146,7 @@ module.exports = {
     registerUser,
     //batchRegisterUser,
     loginUser,
+    updateUserRole,
     updateUser,
     deleteUser
 }

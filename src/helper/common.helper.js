@@ -7,6 +7,25 @@ const createToken = (payload) => {
     })
 }
 
+const allowedRole = (...role) => {
+    return (req, res, next) => {
+        try {
+            if(!role.includes(req.role.name)){
+                return res.status(403).json({
+                    message: "You do not have any permission for editing role!",
+                    success: false
+                });
+            }
+        } catch (error) {
+            return res.status(403).json({
+                message: "You do not have permission for editing role!(), error",
+                success: false
+            })
+        }
+    }
+}
+
 module.exports = {
-    createToken
+    createToken,
+    allowedRole
 }
