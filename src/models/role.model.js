@@ -5,7 +5,8 @@ const roleModelSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        enum: ["Super Admin", "Admin", "Salesman", "Customer"]
+        enum: ["Super Admin", "Admin", "Salesman", "Customer"],
+        default: "Customer"
     },
     description: {
         type: String,

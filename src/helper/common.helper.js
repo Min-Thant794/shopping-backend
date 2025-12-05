@@ -1,9 +1,12 @@
 const jwt = require("jsonwebtoken")
 const config = require("../config/config")
 
-const createToken = (payload) => {
+const createToken = (payload, rememberMe = false) => {
+    if(rememberMe){
+        return jwt.sign(payload, config.SECRET_KEY)
+    }
     return jwt.sign(payload, config.SECRET_KEY, {
-        expiresIn: config.JWT_TTL
+        expiresIn: config.JWT_TTL || "id"
     })
 }
 
@@ -16,6 +19,7 @@ const allowedRole = (...role) => {
                     success: false
                 });
             }
+            next();
         } catch (error) {
             return res.status(403).json({
                 message: "You do not have permission for editing role!(), error",

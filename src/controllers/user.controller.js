@@ -9,6 +9,8 @@ const registerUser = async (req, res) => {
     try {
         console.log("req.body", req.body)
 
+        const {rememberMe} = req.body;
+
         const foundUser = await userModel.find({name: req.body.name})
         if(foundUser && foundUser.length > 0) {
             return res.status(400).json({message: "User Already Exist!", success: false})
@@ -19,7 +21,7 @@ const registerUser = async (req, res) => {
         })
 
         const {name, password, role} = response;
-        const token = createToken({name, password, role});
+        const token = createToken({name, password, role}, rememberMe);
 
         res.status(200).json({
             data: response,
