@@ -5,6 +5,13 @@ const categoryModelSchema = new mongoose.Schema({
         type: String,
         unique: true,
         required: true
+    },
+    imageUrl: {
+        type: String,
+        requried: false
+    },
+    shopId: {
+        type: mongoose.Schema.Types.ObjectId
     }
 },{
     timestamps:true

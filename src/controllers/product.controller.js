@@ -1,56 +1,160 @@
-const productModel = require("../models/product.model")
+const productModel = require("../models/product.model");
+const Size = require("../models/size.model");
+
+const { uploadImages } = require("../config/supabase");
+const { setCache } = require("../config/redisClient");
 
 const getAllProduct = async (req, res) => {
     try {
-        const allProduct = await productModel.find({})
-        const totalProducts = allProduct.length
-        res.status(200).json({message:`Total ${totalProducts} ${totalProducts > 1 ? 'products' : 'product'} in your store!`, allProduct})
+        let { page = 1, limit = 12, category, discount } = req.query;
+        
+        page = parseInt(page);
+        limit = parseInt(limit);
+
+        const filter = {};
+
+        //Filter by category (existing feature)
+        if (category) {
+            filter.category = category;
+        }
+
+        //Filter by discount items only (new feature)
+        // If discount = true -> return items with discount > 0
+        if (discount === "true") {
+            return filter.discount = { $gt: 0};
+        }
+
+        //Total count for pagination
+        const totalProducts = await productModel.countDocuments(filter);
+
+        //Paginated fetch
+        const products = await productModel.find(filter)
+        .skip((page - 1) * limit)
+        .limit(limit);
+
+        return res.statu(200).json({
+            success: true,
+            message: `${products.length} product(s) retrieved`,
+            totalProducts,
+            totalPages: Math.ceil(totalProducts / limit),
+            currentPage: page,
+            limit,
+            data: products
+        })
+
     } catch (error) {
-        console.log("An Error Occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("An Error Occurred At getAllProduct()!", error);
+        res.status(500).json({message: "Internal Server Error!", success: false });
+    }
+}
+
+const getProductsByShopId = async (req, res) => {
+    try {
+        let { page = 1, limit = 12, category, discount } = req.query;
+        page = parseInt(page);
+        limit = parseInt(limit);
+        const filter = {};
+
+        // user/shop scope
+        filter.shopId = req.id; //or filter.shopId = id; (depending on your schema)
+
+        //filter by category
+        if (category) {
+            filter.category = category;
+        }
+
+        // filter for discount items
+        if (discount === "true") {
+            filter.discount = { $gt: 0};
+        }
+
+        // get total count
+        const totalProducts = await productModel.countDocuments(filter);
+
+        // Fetched paginated data
+        const products = await productModel.find(filter)
+        .skip((page -1) * limit)
+        .limit(limit)
+        .sort({createdAt: -1});
+
+        // setCache(`product-${page}-${limit}`)
+        return res.status(200).json({
+            success: true,
+            message: `${products.length} product(s) retrieved`,
+            totalProducts,
+            totalPages: Math.ceil(totalProducts / limit),
+            currentPage: page,
+            limit,
+            data: products
+        })
+    } catch (error) {
+        console.log("An Error Occurred At getProductsByShopId()", error);
+        return res.status(500).json({ messgae: "Internal Server Error", success: false });
     }
 }
 
 const getProductByCategory = async (req, res) => {
     try {
-        const { category } = req.params
-        const foundProduct = await productModel.find({ category })
-        const totalFoundProductByCat = foundProduct.length;
-        res.status(200).json({message: `${totalFoundProductByCat} ${totalFoundProductByCat > 1 ? 'products' : 'product'} found with category!`, foundProduct})
+        const { category } = req.params;
+        const foundProducts = await productModel.find({ category });
+        console.log("Found product by category: ", foundProducts);
+        const totalProduct = foundProducts.length;
+        if (foundProducts) {
+            return res.status(200).json({ messgae: `${totalProduct} ${totalProduct > 1 ? " products" : " product"} retrieved!`, foundProducts, success: true });
+        } else {
+            return res.status(400).json({ message: "Product not found!", success: false });
+        }
     } catch (error) {
-        console.log("An Error Occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("An Error Occurred At getProductByCategory()", error);
+        return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
 
-const getProductByDiscount = async (req, res) => {
+const getProductByDiscountPercent = async (req, res) => {
     try {
         const { discount } = req.params;
-        const foundProductWithDiscount = await productModel.find({ discount : parseInt( discount ) })
-        const totalFoundProductWithDiscount = foundProductWithDiscount.length;
-        res.status(200).json({message: `${totalFoundProductWithDiscount} ${totalFoundProductWithDiscount > 1 ? 'products': 'product'} found with discount`, foundProductWithDiscount})
+        console.log("Type of params: ", typeof parseInt(discount));
+        
+        const foundProducts = await productModel.find({ discount: parseInt(discount)});
+        console.log("Found products by discount: ", foundProducts);
+        
+        const totalProduct = foundProducts.length;
+        if (foundProducts) {
+            return res.status(200).json({ message: `${totalProduct} ${totalProduct > 1 ? " products" : " product"} retrieved!`, foundProducts, success: true });
+        } else {
+            return res.status(400).json({ message: "Product not found!", success: false });
+        }
     } catch (error) {
-        console.log("An Error Occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
-    }
-}
-
-const getAllProductByDiscount = async (req, res) => {
-    try {
-        const foundAllProductWithDiscount = await productModel.find({ discount: { $gt: 0 }})
-        const totalFoundDiscountProduct = foundAllProductWithDiscount.length;
-        res.status(200).json({messgae: `${totalFoundDiscountProduct} ${totalFoundDiscountProduct > 1 ? 'products' : 'product'} found with discount`, foundAllProductWithDiscount})
-    } catch (error) {
-        console.log("An Error Occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("An Error Occurred At getProductByDiscount!", error);
+        res.status(500).json({message: "Internal Server Error!", success: false });
     }
 }
 
 const createProduct = async (req, res) => {
     try {
-        const createdProduct = await productModel.create(req.body)
-        if(!createdProduct) res.status(400).json({message: "Failed to create product!"})
-            res.status(200).json({message: "Product successfully created!", createdProduct})
+        let imageUrls = [];
+        if (req.files && req.files.length > 0) {
+            imageUrls = await uploadImages(req.files);
+        }
+
+        console.log("req id", req.id);
+        const productData = {
+            ...req.body,
+            shopId: req.id,
+            imageUrls,
+            //Ensure JSOn arrays are pared as objects
+            size: typeof req.body.size === "string" ? JSON.parse(req.body.size) : req.body.size || [],
+            variants: typeof req.body.variants === "string" ? JSON.parse(req.body.variants) : req.body.variants || [],
+            discount: Number(req.body.discount) || 0
+        };
+
+        const createdProduct = await productModel.create(productData);
+
+        if (createdProduct) {
+            return res.status(200).json({ message: "Product created successfully!", data: createdProduct, success: true });
+        } else {
+            return res.status(400).json({ message: "Failed to create product!", success: false });
+        }
     } catch (error) {
         console.log("An Error Occurred!", error)
         res.status(500).json({message: "Internal Server Error!", error})
@@ -59,13 +163,7 @@ const createProduct = async (req, res) => {
 
 const batchCreateProduct = async (req, res) => {
     try {
-        //to uppercase()
-        //insertMany() create object(s)
-        const productData = req.body.map(product => ({
-            ...product,
-            name: product.name ? product.name.toUpperCase() : undefined
-        }))
-        const batchCreatedProduct = await productModel.insertMany(productData)
+        const batchCreatedProduct = await productModel.insertMany(req.body);
         if (!batchCreatedProduct) res.status(400).json({message: "Failed to create batch products!"})
             res.status(200).json({message: "Product successfully batch created!", batchCreatedProduct})
     } catch (error) {
@@ -76,60 +174,73 @@ const batchCreateProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     try {
-        const {name, description, category, size, variants, price, unit, discount, stock, rating, review} = req.body
-        const updatedProduct = await productModel.findByIdAndUpdate(req.params.id, { name: name.toUpperCase(), description, category, size, variants, price, unit, discount, stock, rating, review }, {new: true})
-        if (!updatedProduct) res.status(400).json({message: "Failed to update category!"})
-            res.status(200).json({messgae: "Successfully updated!", updatedProduct})
+        let imageUrls = req.body.imageUrls || [];
+        if (req.files && req.files.length > 0) {
+            const uploaded = await uploadImages(req.files);
+            imageUrls = [...imageUrls, ...uploaded];
+        }
+
+        const updatedData = {
+            ...req.body,
+            imageUrls,
+            size: typeof req.body.size === "string"? JSON.parse(req.body.size) : req.body.size || [],
+            variants: typeof req.body.variants === "string" ? JSON.parse(req.body.variants) : req.body.variants || [],
+            discount: Number(req.body.discount) || 0
+        }
+
+        const updatedProduct = await productModel.findByIdAndUpdate(req.params.id, updatedData, { new: true });
+        if (updatedProduct) {
+            return res.status(200).json({ message: "Product updated successfully", data: updatedProduct, success: true });
+        } else {
+            return res.status(400).json({ message: "Failed to update product!", success: false });
+        }
     } catch (error) {
         console.log("An Error Occurred!", error)
         res.status(500).json({message: "Internal Server Error!"})
     }
 }
 
-const updateProductByName = async (req, res) => {
+const getProductWithDiscount = async (req, res) => {
     try {
-        const {name, description, category, price, unit, discount, stock, rating, review} = req.body
-        const updatedProductByName = await productModel.findOneAndUpdate({name: req.params.name}, { name: name.toUpperCase(), description, category, size, variants, price, unit, discount, stock, rating, review }, {new: true})
-        if (!updatedProductByName) res.status(400).json({message: "Failed to update category!"})
-            res.status(200).json({message: "Successfully updated!", updatedProductByName})
+        const foundProducts = await productModel.find({ discount: { $gt: 0}});
+        console.log("Found product by discount: ", foundProducts);
+
+        const totalProduct = foundProducts.length;
+        if (foundProducts) {
+            return res.status(200).json({ message: `${totalProduct} ${totalProduct > 1 ? " products" : " product"} retrieved!`, foundProducts, success: true });
+        } else {
+            return res.status(400).json({ message: "Product not found!", success: false });
+        }
     } catch (error) {
-        console.log("An Error Occurred!")
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("An Error Occurred At getProductWithDiscount()", error);
+        return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
 
 const deleteProduct = async (req, res) => {
     try {
-        const deletedProduct = await productModel.findByIdAndDelete(req.params.id, {new: true})
-        if (!deletedProduct) res.status(400).json({message: "Failed to delete product!"})
-            res.status(200).json({message: "Successfully deleted!"})
+        const { id } = req.params;
+        const deletedProduct = await productModel.findByIdAndDelete(id, { new: true });
+        if (!deletedProduct) {
+            return res.status(400).json({ message: "Failed to delete product!", success: false });
+        } else {
+            console.log("Product is successfully deleted");
+            return res.status(200).json({ message: "Product is successfully deleted!", data: deletedProduct, success: true });
+        }
     } catch (error) {
-        console.log("An Error Occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("An Error Occurred At deleteProduct()", error);
+        return res.status(500).json({ message: "Internal Server Error", success: false });
     }
 }
-
-const deleteProductByName = async (req, res) => {
-    try {
-        const deletedProductByName = await productModel.findOneAndDelete({name: req.params.name}, {new: true})
-        if (!deletedProductByName) res.status(400).json({message: "Failed to delete product!"})
-            res.status(200).json({message: "Successfully deleted!"})
-    } catch (error) {
-        console.log("An Error Occurred!")
-        res.status(500).json({message: "Internal Server Error!"})
-    }
-}
-
 
 module.exports = {
     getAllProduct,
     getProductByCategory,
-    getProductByDiscount,
-    getAllProductByDiscount,
+    getProductByDiscountPercent,
+    getProductWithDiscount,
     createProduct,
+    getProductsByShopId,
     batchCreateProduct,
     updateProduct,
-    updateProductByName,
-    deleteProduct,
-    deleteProductByName
+    deleteProduct
 }

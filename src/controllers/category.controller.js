@@ -1,91 +1,118 @@
-const categoryModel = require("../models/category.model")
-const { setCache, getCache, clearCache } = require("../config/redisClient")
-const config = require("../config/config")
+const Category = require("../models/category.model");
+const { uploadImage } = require("../config/supabase");
 
-const getallCategory = async (req, res) => {
+const getAllCategories = async (req, res) => {
     try {
-        const cachedData = await getCache(config.REDIS_CATEGORY_KEY)
-        if(cachedData){
-            const jsonData = JSON.parse(cachedData)
-            res.status(200).json({
-                success: true,
-                message: "Data Fetched From Redis Cache",
-                data: jsonData
-            })
+        const allCategories = await Category.find({})
+        const totalItems = allCategories.length;
+        if(allCategories){
+            return res.status(200).json({ message: `${totalItems} ${totalItems > 1 ? ' categories ' : ' category '} retrieved`, data: allCategories, success: true});
+        } else {
+            return res.status(400).json({ message: "Failed to retrieve categories!", success: false});
         }
-        const allCategory = await categoryModel.find({})
-        await setCache(config.REDIS_CATEGORY_KEY, allCategory)
-        const totalCategory = allCategory.length
-        res.status(200).json({message: `Total ${totalCategory} ${totalCategory > 1 ? 'categories' : 'category'} found!`, allCategory})
     } catch (error) {
-        console.log("An Error Occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("Error occurred at getAllCategories()", error);
+        return res.status(500).json({ message: "Internal Server Error! getallCategories()", error});
+    }
+}
+
+const getCategoryByShopId = async (req, res) => {
+    try {
+        const categories = await Category.find({ shopId: req.id })
+        if(categories){
+            return res.status(200).json({ message: `Successfully fetched categories!`, data: categories, success: true});
+        } else {
+            return res.status(400).json({ message: "Failed to retrieve categories!", success: false});
+        }
+    } catch (error) {
+        console.log("Error occurred at getCategoryByShopId()", error);
+        return res.status(500).json({ message: "Internal Server Error! getCategoryByShopId()", error});
     }
 }
 
 const createCategory = async (req, res) => {
     try {
-        const createCategory = await categoryModel.create({name: req.body.name.toUpperCase()})
-        if(!createCategory) res.status(405).json({message: "Failed to create category", success: false})
-            await clearCache(config.REDIS_CATEGORY_KEY)
-            res.status(201).json({data: createCategory, message: "Successfully category created!", success: true})
+        let finalData = { ...req.body, shopId: req.id }
+
+        if (req.file && req.body.image !== "null") {
+            const imageUrl = await uploadImage(req.file);
+            final = { ...finalData, imageUrl }
+        } else {
+            delete finalData.image
+        }
+
+        console.log("Final Data: ", finalData);
+        const createdCategory = await Category.create(finalData);
+        return res.status(200).json({ message: `Category successfully created!`, data: createdCategory, success: true});
     } catch (error) {
-        console.log("An error occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
-    }
+        console.log("Error occurred at createCategory()", error);
+        return res.status(500).json({ message: "Internal Server Error! createCategory()", error});
+    }   
 }
 
 const updateCategory = async (req, res) => {
     try {
-        const updatedCategory = await categoryModel.findByIdAndUpdate(req.params.id, {name: req.body.name.toUpperCase()}, {new: true})
-        if(!updatedCategory) res.status(400).json({message: "Failed to update category!"})
-            
-            await clearCache(config.REDIS_CATEGORY_KEY)
-            res.status(200).json({message: "Category is successfully updated!", updatedCategory, success: true})
-        console.log("Updated Category: ", updatedCategory)
+        const { id } = req.params;
+        const updatedCategory = await Category.findByIdAndUpdate(id, req.body, { new: true});
+        if (updatedCategory){
+            return res.status(200).json({ message: `Category updated successfully!`, data: updatedCategory, success: true});
+        } else {
+            return res.status(400).json({ message: `Failed to update category!`, success: false});
+        }
     } catch (error) {
-        console.log("An error occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("Error updating category updateCategory()", error);
+        return res.status(500).json({ message: `Internal Server Error! updateCategory()`, error});
     }
 }
 
 const updateCategoryByName = async (req, res) => {
     try {
-        const updatedCatByName = await categoryModel.findOneAndUpdate({name: req.params.name}, {name: req.body.name.toUpperCase()}, {new: true})
-        if(!updatedCatByName) res.status(400).json({message: "Failed to update category!"})
-            res.status(200).json({message: "Category is successfully updated!", updatedCatByName})
+        const { name } = req.params;
+        const updatedCategoryByName = await Category.findOneAndUpdate({ name }, req.body, { new: true});
+        if (updatedCategoryByName) {
+            return res.status(200).json({ message: `Category updatd successfully!`, data: updatedCategoryByName, success: true})
+        } else {
+            return res.status(400).json({ message: `Failed to update category!`, success: false});
+        }
     } catch (error) {
-        console.log("An error occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("Error occurred at updateCategoryByName()", error);
+        return res.status(500).json({ message: `Internal Server Error! updateCategoryByName()`, error});
     }
 }
 
 const deleteCategory = async (req, res) => {
     try {
-        const deletedCategory = await categoryModel.findByIdAndDelete(req.params.id, {new: true})
-        if(!deletedCategory) res.status(400).json({message: "Failed to delete category!"})
-            res.status(200).json({message: "This category is successfully deleted!", deletedCategory})
-        console.log("Deleted category: ", deletedCategory)
+        const { id } = req.params;
+        const deletedCategory = await Category.findByIdAndDelete(id, { new: true });
+        if (deletedCategory) {
+            return res.status(200).json({ message: `Category deleted successfully!`, data: deletedCategory, success: true});
+        } else {
+            return res.status(400).json({ message: `Failed to delete category!`, success: false});
+        }
     } catch (error) {
-        console.log("An error occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("Error Deleting Category! deleteCategory()", error);
+        return res.status(500).json({ message: "Internal Server Error! deleteCategory()", error});
     }
 }
 
 const deleteCategoryByName = async (req, res) => {
     try {
-        const deleteCatByName = await categoryModel.findOneAndDelete({name: req.params.name}, {new: true})
-        if(!deleteCatByName) res.status(400).json({message: "Failed to delete category!"})
-            res.status(200).json({message:"This category is successfully deleted!", deleteCatByName})
-        console.log("Deleted Category By Name: ", deleteCatByName)
+        const { name } = req.params;
+        const deletedCategoryByName = await Category.findOneAndDelete({ name }, {new: true});
+        if (deletedCategoryByName) {
+            return res.status(200).json({ message: `Category deleted successfully!`, data: deletedCategoryByName, success: true});
+        } else {
+            return res.status(400).json({ message: `Failed to delete category!`, success: false});
+        }
     } catch (error) {
-        console.log("An error occurred!", error)
-        res.status(500).json({message: "Internal Server Error!"})
+        console.log("Erorr Deleting Category by Name! deleteCategoryByName()", error);
+        return res.status(500).json({ message: `Internal Server Error! deleteCategoryByName()`, error});
     }
 }
 
 module.exports = {
-    getallCategory,
+    getAllCategories,
+    getCategoryByShopId,
     createCategory,
     updateCategory,
     updateCategoryByName,

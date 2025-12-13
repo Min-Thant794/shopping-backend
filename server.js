@@ -1,46 +1,63 @@
-const express = require('express');
-const app = express()
-const mongoose = require("mongoose")
 require('dotenv').config();
-const config = require("./src/config/config")
-const port = config.PORT
-const mongodb_url = config.MONGODB_URL
-const userRoutes = require("./src/routes/user.route")
-const roleRoutes = require("./src/routes/role.route")
-const unitRoutes = require("./src/routes/unit.route")
-const categoryRoutes = require("./src/routes/category.route")
-const productRoutes = require("./src/routes/product.route")
-const sizeMapRoutes = require("./src/routes/sizeMap.route")
-const json = require('json')
+const express = require('express');
+const http = require("http");
+const mongoose = require("mongoose");
 const cors = require('cors');
-const {connectRedis} = require("./src/config/redisClient")
 
+const config = require("./src/config/config");
+const {connectRedis} = require("./src/config/redisClient");
+const { initSocket } = require("./src/utils/socket");
+
+const userRoute = require("./src/routes/user.route");
+const roleRoute = require("./src/routes/role.route");
+const unitRoute = require("./src/routes/unit.route");
+const sizeRoute = require("./src/routes/size.route");
+const categoryRoute = require("./src/routes/category.route");
+const productRoute = require("./src/routes/product.route");
+const orderRoute = require('./src/routes/order.route');
+const paymentRoute = require('./src/routes/payment.route');
+const app = express();
+const server = http.createServer(app);
+
+app.use(express.json());
 app.use(cors({
     origin: [
         "http://localhost:3000",
         "http://localhost:4000",
         "https://shopping-pwa-admin-ui.vercel.app"
     ],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true
 }));
-app.use(express.json())
-app.listen(port, ()=>{
-    console.log(`Server is listening at http://localhost:${port}`)
+
+//Test route
+app.get("/", (req, res) => {
+    res.send("API is running with Socket.IO!");
+});
+
+app.listen(config.PORT, ()=>{
+    console.log(`Server is listening at http://localhost:${config.PORT}`)
 })
 
 app.get('/', (req, res) => {
     res.send("Api start working!")
 })
 
-app.use("/api/v1/user", userRoutes)
-app.use("/api/v1/unit", unitRoutes)
-app.use("/api/v1/category", categoryRoutes)
-app.use("/api/v1/product", productRoutes)
-app.use("/api/v1/sizeMap", sizeMapRoutes)
-app.use("/api/v1/role", roleRoutes)
+app.use("/api/v1/user", userRoute);
+app.use("/api/v1/unit", unitRoute);
+app.use("/api/v1/category", categoryRoute);
+app.use("/api/v1/product", productRoute);
+app.use("/api/v1/size", sizeRoute);
+app.use("/api/v1/role", roleRoute);
+app.use("/api/v1/order", orderRoute);
+app.use("/api/v1/payment", paymentRoute);
 
-mongoose.connect(mongodb_url).then(() =>{
+//Initialize Socket.IO
+initSocket(server);
+
+mongoose.connect(config.MONGODB_URL).then(() =>{
     console.log("Mongodb is successfully connnected!")})
-    connectRedis().then(() => {
-        console.log("Redis successfully connected!")})
+    
+connectRedis().then(() => {
+    console.log("Redis successfully connected!")})
     .catch((error) => console.log("Fail to connect with database", error))

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Role = require("./role.model");
 
 const userModelSchema =  new mongoose.Schema({
     name:{type: String, required: true, unique: true},
@@ -21,7 +22,8 @@ const userModelSchema =  new mongoose.Schema({
     password:{type: String, required: true},
     role: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "roles"
+        ref: "roles",
+        required: false,
     },
     isLoggedIn:{type: Boolean, required: true, default: true},
     allowedPath:{
@@ -35,9 +37,28 @@ const userModelSchema =  new mongoose.Schema({
     active:{
         type: Boolean,
         default: true
+    },
+    paymentMethods: {
+        type: [Object],
+        required: false,
     }
 },{
     timestamps: true
+});
+
+//pre save hook
+userModelSchema.pre("save", async function (next) {
+    if(!this.role) {
+        const userRole = await Role.findOne({ name: "Customer" });
+
+        if(!userRole) {
+            throw new Error("Default role \"Customer\" not found in roles collection.");
+        }
+
+        this.role = userRole._id;
+    }
+
+    next();
 })
 
 module.exports = mongoose.model('user', userModelSchema);

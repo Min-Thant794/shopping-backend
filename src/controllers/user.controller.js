@@ -2,8 +2,7 @@ const userModel = require('../models/user.model');
 const { encryption, comparison } = require("../helper/encryptDecrypt")
 const { createToken } = require("../helper/common.helper");
 const { uploadImage } = require('../config/supabase');
-const { getCache } = require('../config/redisClient');
-config = require("../config/config")
+// const { getCache } = require('../config/redisClient');
 
 const registerUser = async (req, res) => {
     try {

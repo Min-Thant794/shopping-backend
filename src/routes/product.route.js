@@ -1,16 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const { getAllProduct, createProduct, updateProduct, updateProductByName, deleteProduct, deleteProductByName, getProductByCategory, getProductByDiscount, batchCreateProduct, getAllProductByDiscount } = require("../controllers/product.controller")
+const { createProduct, getAllProduct, getProductByCategory, batchCreateProduct, getProductByDiscountPercent, getProductWithDiscount, updateProduct, deleteProduct, getProductsByShopId } = require("../controllers/product.controller");
+const { uploadMultiple } = require("../config/supabase");
+const { verifyToken } = require("../helper/authJWT");
 
-router.get("/", getAllProduct)
-router.get("/category/:category", getProductByCategory)
-router.get("/discount/:discount", getProductByDiscount)
-router.get("/alldiscount", getAllProductByDiscount)
-router.post("/", createProduct)
-router.post("/batch", batchCreateProduct)
-router.put("/id/:id", updateProduct)
-router.put("/name/:name", updateProductByName)
-router.delete("/id/:id", deleteProduct)
-router.delete("/name/:name", deleteProductByName)
+router.post("/", uploadMultiple, verifyToken, createProduct);
+router.post("/batch", batchCreateProduct);
+router.get("/", verifyToken, getAllProduct);
+router.get("/products-by-id", verifyToken, getProductsByShopId);
+router.get("/category/:category", getProductByCategory);
+router.get("/discount/:discount", getProductByDiscountPercent);
+router.get("/with-discount", getProductWithDiscount);
+router.put("/:id", uploadMultiple, updateProduct);
+router.delete("/:id", deleteProduct);
 
 module.exports = router

@@ -1,63 +1,49 @@
 const mongoose = require("mongoose");
 
 const productModelSchema = new mongoose.Schema({
-    name:{
+    name: {
         type: String,
-        required: true
+        required: true,
     },
-    description:{
-        type: String, 
-        required: true
-    },
-    category:{
+    modelNo: {
         type: String,
-        enum: ["Men's Accessories", "Women's Accessories", "Men's Fashion", "Women's Fashion"]
+        required: true,
+        unique: true
     },
-    size:{
+    category: {
+        type: String,
+        required: true,
+    },
+    size: {
         type: [Object],
-        required: true
+        required: true,
     },
-    variants:{
+    variants: {
         type: [Object],
-        required: true
+        required: false,
     },
-    price:{
-        type: Number,
-        required: true
-    },
-    unit:{
+    gender: {
         type: String,
-        required: true
+        enum: ["Men", "Women", "Unisex"],
+        required: true,
+        default: "Unisex"
     },
-    discount:{
+    imageUrls: {
+        type: [String],
+        required: false,
+    },
+    discount: {
         type: Number,
-        enum: [0, 15, 20, 30, 40],
         required: true,
         default: 0
     },
-    stock:{
-        type: Number,
-        required: true
-    },
-    rating:{
-        type: Number,
-        enum: [0, 1, 2, 3, 4, 5],
-        default: 0,
-        required: true
-    },
-    review:{
-        type: String,
-        required: false
+    shopId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+        required: true,
     }
-},{
+}, {
     timestamps: true
-})
+});
 
-productModelSchema.pre("save", function (next) {
-    if (this.name) {
-        this.name = this.name.toUpperCase();
-    }
-    next();
-})
-
-module.exports = mongoose.model("products", productModelSchema)
+module.exports = mongoose.model("product", productModelSchema);

@@ -2,6 +2,38 @@ const unitModel = require("../models/unit.model")
 const { setCache, getCache, clearCache } = require("../config/redisClient")
 const config = require("../config/config")
 
+const getUnitByShopId = async (req, res) => {
+    try {
+        //redis
+        const cachedData = await getCache(`${config.REDIS_UNIT_KEY}-${req.id}`)
+        if (cachedData) {
+            const jsonData = JSON.parse(cachedData);
+            return res.status(200).json({
+                success: true,
+                message: "Data Fetched from Redis Cache",
+                data: jsonData
+            })
+        }
+
+        console.log("shop id: ", req.id);
+        const allUnits = await unitModel.find({ shopId: req.id });
+        await setCache(`${config.REDIS_UNIT_KEY}-${req.id}`, allUnits);
+
+        if (allUnits) {
+            return res.status(200).json({
+                success: true,
+                message: "Data fetched from MongoDB",
+                data: allUnits
+            });
+        } else {
+            return res.status(400).json({ message: "Failed to fetched unit!", success: false });
+        }
+    } catch (error) {
+        console.log("An Error Occurred at getUnitByShopId()", error);
+        return res.status(500).json({ message: "Internal Server Error!", success: false });
+    }
+}
+
 const getAllUnit = async (req, res) => {
     try {
         //clearCache(config.REDIS_UNIT_KEY)
@@ -65,6 +97,7 @@ const deleteUnit = async(req, res) => {
 }
 
 module.exports = {
+    getUnitByShopId,
     getAllUnit,
     createUnit,
     updateUnit,
