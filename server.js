@@ -35,7 +35,7 @@ app.get("/", (req, res) => {
     res.send("API is running with Socket.IO!");
 });
 
-app.listen(config.PORT, ()=>{
+server.listen(config.PORT, ()=>{
     console.log(`Server is listening at http://localhost:${config.PORT}`)
 })
 
