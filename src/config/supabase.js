@@ -44,7 +44,7 @@ const uploadImages = async (files) => {
         const fileStorage = supabaseClient.storage.from(config.SUPABASE_BUCKET);
         const uploadedUrls = [];
         for (const file of files) {
-            const fileName = `${Date.now()}-${file.originalname}}`;
+            const fileName = `${Date.now()}-${file.originalname}`;
             const { data, error } = await fileStorage.upload(fileName, file.buffer, {
                 contentType: file.mimetype,
                 upsert: true,
