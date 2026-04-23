@@ -23,12 +23,12 @@ const userModelSchema =  new mongoose.Schema({
     role: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "roles",
-        required: false,
+        required: true,
     },
-    isLoggedIn:{type: Boolean, required: true, default: true},
+    isLoggedIn:{type: Boolean, required: false, default: true},
     allowedPath:{
         type: [String],
-        require: true
+        required: false
     },
     imageUrl:{
         type: String,

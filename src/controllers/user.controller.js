@@ -1,4 +1,5 @@
 const userModel = require('../models/user.model');
+const Role = require("../models/role.model")
 const { encryption, comparison } = require("../helper/encryptDecrypt")
 const { createToken } = require("../helper/common.helper");
 const { uploadImage } = require('../config/supabase');
@@ -6,34 +7,96 @@ const { uploadImage } = require('../config/supabase');
 
 const registerUser = async (req, res) => {
     try {
-        console.log("req.body", req.body)
+        const { name, password, role: roleName, rememberMe, ...rest } = req.body;
 
-        const {rememberMe} = req.body;
-
-        const foundUser = await userModel.find({name: req.body.name})
-        if(foundUser && foundUser.length > 0) {
-            return res.status(400).json({message: "User Already Exist!", success: false})
+        if (!name || !password) {
+            return res.status(400).json({
+                message: "Name and password are required!",
+                success: false
+            });
         }
-        const response = await userModel.create({
-            ...req.body,
-            password : encryption(req.body.password)
-        })
 
-        const {name, password, role} = response;
-        const token = createToken({name, password, role}, rememberMe);
+        const foundUser = await userModel.findOne({ name });
+        if (foundUser) {
+            return res.status(400).json({
+                message: "User Already Exist!",
+                success: false
+            });
+        }
 
-        res.status(200).json({
-            data: response,
+        let roleDoc;
+
+        if (roleName) {
+            console.log("Finding role:", roleName);
+
+            roleDoc = await Role.findOne({
+                name: roleName,
+                active: true
+            });
+
+            if (!roleDoc) {
+                console.log("Role not found:", roleName);
+                return res.status(400).json({
+                    message: `Role "${roleName}" not found`,
+                    success: false
+                });
+            }
+        } else {
+            console.log("No role provided, using default Customer");
+
+            roleDoc = await Role.findOne({
+                name: "Customer",
+                active: true
+            });
+
+            if (!roleDoc) {
+                return res.status(500).json({
+                    message: 'Default role "Customer" not found',
+                    success: false
+                });
+            }
+        }
+
+        const newUserData = {
+            ...rest,
+            name,
+            password: encryption(password),
+            role: roleDoc._id,
+            allowedPath: roleDoc.allowedPaths
+        };
+
+        const response = await userModel.create(newUserData);
+
+        const populatedUser = await userModel
+            .findById(response._id)
+            .populate("role");
+
+        const token = createToken(
+            {
+                userId: populatedUser._id,
+                name: populatedUser.name,
+                role: populatedUser.role.name
+            },
+            rememberMe
+        );
+
+        return res.status(201).json({
+            data: populatedUser,
             token,
-            message: `User ${response.name} has successfully created!`,
+            message: `User ${populatedUser.name} has successfully created!`,
             success: true
-        })
+        });
 
     } catch (error) {
-        console.log(error)
-        res.status(500).json("internal server error!")
+        console.log("===== REGISTER USER ERROR =====");
+        console.log(error);
+
+        return res.status(500).json({
+            message: "Internal server error!",
+            success: false
+        });
     }
-}
+};
 
 // const batchRegisterUser = async (req, res) => {
 //     try {
@@ -61,32 +124,50 @@ const getAllAdmin = async (req, res) => {
 
 const loginUser = async (req, res) => {
     try {
-        const { name, password } = req.body;
-        console.log(name, password)
+        const { name, password, rememberMe } = req.body;
 
         if (!name || !password) {
-            return res.status(400).json({ message: "Name and password are required!" });
+            return res.status(400).json({
+                message: "Name and password are required!"
+            });
         }
 
         const foundUser = await userModel.findOne({ name }).populate("role");
+
         if (!foundUser) {
-            return res.status(400).json({ message: "User does not exist!" });
+            return res.status(400).json({
+                message: "User does not exist!"
+            });
         }
 
         const isPasswordCorrect = await comparison(password, foundUser.password);
+
         if (!isPasswordCorrect) {
-            return res.status(403).json({ message: "User not authenticated!" });
+            return res.status(403).json({
+                message: "User not authenticated!"
+            });
         }
+
+        const token = createToken(
+            {
+                userId: foundUser._id,
+                name: foundUser.name,
+                role: foundUser.role.name
+            },
+            rememberMe
+        );
 
         return res.status(200).json({
             data: foundUser,
-            token: createToken({ name: foundUser.name, email: foundUser.email, password: foundUser.password, role: foundUser.role }),
+            token,
             message: "Login Success!",
             success: true
         });
     } catch (error) {
         console.log("An Error Occurred!", error);
-        res.status(500).json({ message: "Internal Server Error!" });
+        return res.status(500).json({
+            message: "Internal Server Error!"
+        });
     }
 };
 
@@ -121,14 +202,43 @@ const updateUser = async (req, res) => {
 const updateUserRole = async (req, res) => {
     try {
         const { id } = req.params;
-        const updatedUserRole = await userModel.findByIdAndUpdate(id, { role: req.body.role}, {new: true})
-        if(!updatedUserRole) return res.status(400).json({message: "Failed to update user role!", success: false});
-        res.status(200).json({success: true, message: "Successfully updated user role!", data: updatedUserRole})
+        const { role: roleName } = req.body;
+
+        const roleDoc = await Role.findOne({ name: roleName, active: true });
+
+        if (!roleDoc) {
+            return res.status(400).json({
+                message: `Role "${roleName}" not found`,
+                success: false
+            });
+        }
+
+        const updatedUserRole = await userModel.findByIdAndUpdate(
+            id,
+            {
+                role: roleDoc._id,
+                allowedPath: roleDoc.allowedPaths
+            },
+            { new: true }
+        ).populate("role");
+
+        if (!updatedUserRole) {
+            return res.status(400).json({
+                message: "Failed to update user role!",
+                success: false
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Successfully updated user role!",
+            data: updatedUserRole
+        });
     } catch (error) {
         console.log("Error occurred at updateUserRole()", error);
-        res.status(500).json({message: "Internal Server Error!"})
+        res.status(500).json({ message: "Internal Server Error!" });
     }
-}
+};
 
 const deleteUser = async (req, res) => {
     try {
