@@ -133,7 +133,6 @@ const loginUser = async (req, res) => {
         }
 
         const foundUser = await userModel.findOne({ name }).populate("role");
-
         if (!foundUser) {
             return res.status(400).json({
                 message: "User does not exist!"
@@ -141,7 +140,6 @@ const loginUser = async (req, res) => {
         }
 
         const isPasswordCorrect = await comparison(password, foundUser.password);
-
         if (!isPasswordCorrect) {
             return res.status(403).json({
                 message: "User not authenticated!"
@@ -165,7 +163,7 @@ const loginUser = async (req, res) => {
         });
     } catch (error) {
         console.log("An Error Occurred!", error);
-        return res.status(500).json({
+        res.status(500).json({
             message: "Internal Server Error!"
         });
     }

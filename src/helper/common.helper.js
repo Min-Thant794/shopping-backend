@@ -1,5 +1,5 @@
-const jwt = require("jsonwebtoken")
-const config = require("../config/config")
+const jwt = require("jsonwebtoken");
+const config = require("../config/config");
 
 const createToken = (payload, rememberMe = false) => {
     return jwt.sign(payload, config.SECRET_KEY, {
@@ -29,4 +29,4 @@ const allowedRole = (...roles) => {
 module.exports = {
     createToken,
     allowedRole
-}
+};
